@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-
+import os
 import sys
 import tempfile
 from pathlib import Path
@@ -11,6 +11,13 @@ import shutil
 epub_name = sys.argv[1]
 output_dir_name = sys.argv[2]
 
+if not (os.path.isfile(epub_name)):
+    print("Epub file "+epub_name+" doesn't exist or isn't a file")
+    exit(1)
+
+if not (os.path.isdir(output_dir_name)):
+    print("Output dir "+output_dir_name+" doesn't exist or isn't a directory")
+    exit(1)
 
 
 book = epub.read_epub(epub_name)
