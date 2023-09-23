@@ -43,30 +43,43 @@ def get_image_map(src_book: epub) -> dict:
 
 image_map = get_image_map(book)
 
+covers = book.get_items_of_type(ebooklib.ITEM_COVER)
+try:
+    single_cover = next(covers)
+    image_map[single_cover.file_name] = single_cover.id
+    cover_file = open(output_dir_root / epub_base_name / "00-cover.jpg", "wb")
+    cover_file.write(single_cover.get_content())
+    cover_file.close()
+except StopIteration:
+    print("No cover")
+
+processedImages = set()
+
 for page in book.spine:
     page_id = page[0]
     item = book.get_item_with_id(page_id)
     content = item.get_body_content()
     soup = BeautifulSoup(content, features="lxml")
 
-    covers = book.get_items_of_type(ebooklib.ITEM_COVER)
-    cover_file = open(output_dir_root / epub_base_name / "00-cover.jpg", "wb")
-    cover_file.write(next(covers).get_content())
-    cover_file.close()
+
 
     for imgtag in soup.find_all('img'):
         rawSrc = imgtag['src']
-        image_id = image_map.get(rawSrc)
+        if not rawSrc in processedImages:
+            image_id = image_map.get(rawSrc)
+            # print(f'rawStr: {rawSrc}')
+            # print(f'image_id: {image_id}')
+            image_ext = Path(rawSrc).suffix
+            image = book.get_item_with_id(image_id)
+            imageIdxStr=str(imageIdx).zfill(6)
 
-        image_ext = Path(rawSrc).suffix
-        image = book.get_item_with_id(image_id)
-
-        output_name = "image%s%s" % (imageIdx, image_ext)
-        image_file = open(output_dir_root / epub_base_name / output_name, "wb")
-        image_file.write(image.get_content())
-        image_file.close()
-        imageIdx += 1
-        # print(outputName)
+            output_name = "image%s%s" % (imageIdxStr, image_ext)
+            image_file = open(output_dir_root / epub_base_name / output_name, "wb")
+            image_file.write(image.get_content())
+            image_file.close()
+            imageIdx += 1
+            processedImages.add(rawSrc)
+            # print(outputName)
 #        shutil.move(extractedFile, output_dir_root / epub_base_name / output_name)
 
 
