@@ -1,22 +1,18 @@
 #!/usr/bin/env python
+import logging
 import sys
 import zipfile
 
-from zip_counter_lib import is_image
+from zip_counter_lib import count_images_in_zip
+logging.basicConfig(level=logging.INFO)
 
 for zip_name in sys.argv[1:]:
     # zip_name = sys.argv[1]
 
     if not (zipfile.is_zipfile(zip_name)):
-        print("Zip file "+zip_name+" doesn't exist or isn't a file")
+        logging.error("Zip file "+zip_name+" doesn't exist or isn't a file. Skipping")
         # exit(1)
     else:
-        src_file = zipfile.ZipFile(zip_name)
+        num_images = count_images_in_zip(zip_name)
 
-        num_images = 0
-
-        for zip_item in src_file.namelist():
-            if is_image(zip_item):
-                num_images += 1
-
-        print(f'{zip_name}: {num_images}')
+        logging.info(f'{zip_name}: {num_images}')
