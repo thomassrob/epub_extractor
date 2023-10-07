@@ -1,36 +1,40 @@
 #!/usr/bin/env python
+import logging
 import os
 import sys
 from pathlib import Path
 from zipfile import ZipFile
 
 import ebooklib
-from bs4 import BeautifulSoup
 from ebooklib import epub
+
+from epubImageExtLib import extract_images_from_string
+
+logging.basicConfig(level=logging.INFO)
+
 
 epub_name = sys.argv[1]
 output_dir_name = sys.argv[2]
 
 if not (os.path.isfile(epub_name)):
-    print("Epub file "+epub_name+" doesn't exist or isn't a file")
+    logging.error("Epub file "+epub_name+" doesn't exist or isn't a file")
     exit(1)
 
 if not (os.path.isdir(output_dir_name)):
-    print("Output dir "+output_dir_name+" doesn't exist or isn't a directory")
+    logging.error("Output dir "+output_dir_name+" doesn't exist or isn't a directory")
     exit(1)
 
-
+logging.debug('Opening epub file: %s', epub_name)
 book = epub.read_epub(epub_name)
 epubFile = ZipFile(epub_name, "r")
 output_dir_root = Path(output_dir_name)
 
 epub_base_name = Path(epubFile.filename).stem
-# print(epub_base_name)
+logging.debug('Base file name: %s', epub_base_name)
 
 output_dir = output_dir_root / epub_base_name
 Path(output_dir).mkdir()
 
-imageIdx = 0
 
 
 def get_image_map(src_book: epub) -> dict:
@@ -51,35 +55,49 @@ try:
     cover_file.write(single_cover.get_content())
     cover_file.close()
 except StopIteration:
-    print("No cover")
-
-processedImages = set()
-
-for page in book.spine:
-    page_id = page[0]
-    item = book.get_item_with_id(page_id)
-    content = item.get_body_content()
-    soup = BeautifulSoup(content, features="lxml")
+    logging.error("No cover")
 
 
+def extract_all_images():
+    imageIdx = 0
+    processedImages = set()
+    for page in book.spine:
+        page_id = page[0]
+        item = book.get_item_with_id(page_id)
+        content = item.get_body_content()
+        for image_name in extract_images_from_string(content):
+            if not image_name in processedImages:
+                image_id = image_map.get(image_name.replace('../', ''))
+                logging.debug(f'rawStr: {image_name}')
+                logging.debug(f'image_id: {image_id}')
+                image_ext = Path(image_name).suffix
+                image = book.get_item_with_id(image_id)
+                image_idx_str = str(imageIdx).zfill(6)
 
-    for imgtag in soup.find_all('img'):
-        rawSrc = imgtag['src']
-        if not rawSrc in processedImages:
-            image_id = image_map.get(rawSrc)
-            # print(f'rawStr: {rawSrc}')
-            # print(f'image_id: {image_id}')
-            image_ext = Path(rawSrc).suffix
-            image = book.get_item_with_id(image_id)
-            imageIdxStr=str(imageIdx).zfill(6)
+                output_name = "image%s%s" % (image_idx_str, image_ext)
+                image_file = open(output_dir_root / epub_base_name / output_name, "wb")
+                image_file.write(image.get_content())
+                image_file.close()
+                imageIdx += 1
+                processedImages.add(image_name)
 
-            output_name = "image%s%s" % (imageIdxStr, image_ext)
-            image_file = open(output_dir_root / epub_base_name / output_name, "wb")
-            image_file.write(image.get_content())
-            image_file.close()
-            imageIdx += 1
-            processedImages.add(rawSrc)
-            # print(outputName)
-#        shutil.move(extractedFile, output_dir_root / epub_base_name / output_name)
+
+def way_2():
+    imageIdx = 0
+    for image in book.get_items_of_type(ebooklib.ITEM_IMAGE):
+        imageIdxStr = str(imageIdx).zfill(6)
+        image_ext = Path(image.file_name).suffix
+
+        output_name = "image%s%s" % (imageIdxStr, image_ext)
+        image_file = open(output_dir_root / epub_base_name / output_name, "wb")
+        image_file.write(image.get_content())
+        image_file.close()
+        imageIdx += 1
+        # processedImages.add(rawSrc)
+
+
+# way_2()
+
+extract_all_images()
 
 
