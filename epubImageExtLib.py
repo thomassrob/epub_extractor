@@ -20,7 +20,8 @@ def extract_images_from_string(content):
                 url = style['background-image']
                 url = url.replace('url(', '').replace(')', '')
                 # style = imgtag['style']
-                return_list.append(url)
+                if (url):
+                    return_list.append(url)
     return return_list
 
 def resolve_path(src_path, rel_path):

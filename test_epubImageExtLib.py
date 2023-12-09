@@ -74,3 +74,24 @@ class Test(TestCase):
 </body>
 </html>'''
         self.assertEqual(['images/Images-011.jpg'], extract_images_from_string(test_str))
+
+    def test_extract_images_elfen_lied(self):
+        test_str = '''<?xml version='1.0' encoding='utf-8'?>
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <title>Elfen Lied Omnibus Volume 1</title>
+    <link rel="stylesheet" type="text/css" href="styles/okam_9781506738932_epub3_css_r1.css"/>
+    <meta name="viewport" content="width=1448, height=2048"/>
+    <!-- kobo-style -->
+    <script xmlns="http://www.w3.org/1999/xhtml" type="text/javascript" src="js/kobo.js"></script>
+    
+  </head>
+  <body>
+<div class="page">
+<img src="images/Images-001.jpg" class="backgroundImage" alt="background"/>
+</div>
+<!-- The following line allows links in Kobo -->
+<div style="display:none;">cover</div>
+</body>
+</html>'''
+        self.assertEqual(['images/Images-001.jpg'], extract_images_from_string(test_str))
